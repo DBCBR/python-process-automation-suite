@@ -1,6 +1,7 @@
 ![Python](https://img.shields.io/badge/python-3.10+-blue)
 ![Status](https://img.shields.io/badge/status-active-success)
 ![License](https://img.shields.io/badge/license-MIT-green)
+![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
 
 # Python Process Automation Suite
 
@@ -260,11 +261,12 @@ print(settings.ENVIRONMENT)
 
 ## Future Improvements
 
-* Unit tests and integration tests
+* Integration tests with API/network mocks
+* Test coverage report with pytest-cov
 * Task scheduling (APScheduler)
 * Advanced logging and monitoring
 * Docker containerization
-* CI/CD pipeline with GitHub Actions
+* CD pipeline for automated release/deploy
 * Additional pipeline implementations
 * REST API layer for pipeline exposure
 * Database persistence layer
