@@ -3,7 +3,7 @@ CNPJ processing pipeline using ETL pattern.
 """
 
 import re
-from typing import Any, List
+from typing import List
 
 from .base_pipeline import BasePipeline
 from automation.utils.validators import ValidadorCNPJ
@@ -114,3 +114,4 @@ class CNPJPipeline(BasePipeline):
         pattern = r"\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}"
         cnpjs = re.findall(pattern, text)
         # Remove duplicates and return
+        return list(set(cnpjs))
