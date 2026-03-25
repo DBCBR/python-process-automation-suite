@@ -119,6 +119,30 @@ python main.py --pipeline cnpj --input "12.345.678/0001-90,11.222.333/0001-81"
 python main.py --pipeline cnpj --file "cnpjs.txt"
 ```
 
+## Tests
+
+Run tests locally:
+
+```bash
+pip install -r requirements-dev.txt
+pytest -q
+```
+
+Current test coverage includes:
+- validators (CPF/CNPJ)
+- ETL base pipeline lifecycle (success/failure)
+- CNPJ pipeline extract/transform/load behavior
+
+## Continuous Integration
+
+GitHub Actions CI is configured in [.github/workflows/ci.yml](.github/workflows/ci.yml) and runs on:
+- push to main
+- pull requests to main
+
+CI matrix:
+- Python 3.10
+- Python 3.11
+
 ## 📦 Available Pipelines
 
 ### CNPJ Pipeline
