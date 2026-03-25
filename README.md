@@ -130,6 +130,18 @@ python main.py --pipeline cnpj --file "cnpjs.txt"
 python main.py --pipeline cnpj --input "12.345.678/0001-90"
 ```
 
+**Expected output (example):**
+```text
+Starting application - Environment: development
+Initializing CNPJ Pipeline
+[CNPJ Pipeline] Starting pipeline execution
+[CNPJ Pipeline] EXTRACT phase
+[CNPJ Pipeline] TRANSFORM phase
+[CNPJ Pipeline] LOAD phase
+Pipeline completed: success
+Processed: 1 records
+```
+
 **Input formats:**
 - Single CNPJ: `"12.345.678/0001-90"`
 - Multiple CNPJs: `"12.345.678/0001-90,11.222.333/0001-81"`
@@ -196,7 +208,7 @@ print(text_content)
 from automation.pipelines.cnpj_pipeline import CNPJPipeline
 
 pipeline = CNPJPipeline(['00.000.000/0000-91'])
-result = pipeline.execute()
+result = pipeline.run()
 ```
 
 ### Services
