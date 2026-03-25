@@ -1,171 +1,31 @@
-import time
+"""
+Main entry point for the application.
+"""
+
 import re
-import os
-import pandas as pd
-import sqlite3
-import tkinter as tk
-import logging
-from tkinter import filedialog
-from datetime import datetime
-from api_brasil_service import consultar_cnpj
-from web_scraper_service import capturar_texto_da_web
-from validadores import ValidadorCPF, ValidadorCNPJ
-
-# Configuração da "Caixa Preta"
-logging.basicConfig(
-    filename="sistema.log",
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%d/%m/%Y %H:%M:%S",
-    encoding="utf-8",
-)
-
-# Teste rápido
-logging.info("O Robô iniciou!")
-logging.warning("Isso é um aviso de teste.")
-logging.error("Isso é um erro de teste.")
+from automation.utils.logger import get_logger
+from automation.utils.validators import ValidadorCNPJ
+from automation.services.brasil_api import consultar_cnpj
+from automation.pipelines.cnpj_pipeline import CNPJPipeline
+from config.settings import settings
 
 
-# --- FASE 0: INTERAÇÃO COM O USUÁRIO (MENU) ---
-print(">>> BEM-VINDO AO ROBÔ CAÇADOR DE CONTRATOS <<<")
-print("Qual fonte de dados você deseja processar?")
-print("[1] Arquivo do Computador (.txt, .xlsx, .csv)")
-print("[2] Página da Web (URL)")
-
-opcao = input("Digite o número da opção (1 ou 2): ").strip()
-
-FONTE_DADOS = ""
-
-if opcao == "1":
-    print("📂 Abrindo janela de seleção de arquivo...")
-    time.sleep(1)
-
-    # Configuração do Tkinter (Janela Invisível)
-    root = tk.Tk()
-    root.withdraw()
-
-    # Abre a caixa "Abrir Arquivo"
-    FONTE_DADOS = filedialog.askopenfilename(
-        title="Selecione o arquivo de contratos",
-        filetypes=[("Todos os arquivos suportados", "*.txt *.xlsx *.xls *.csv")],
-    )
-
-    if not FONTE_DADOS:
-        print("❌ Operação cancelada pelo usuário.")
-        exit()
-
-    print(f"✅ Arquivo selecionado: {FONTE_DADOS}")
-
-elif opcao == "2":
-    FONTE_DADOS = input("🌐 Cole a URL do site aqui: ").strip()
-
-    if not FONTE_DADOS.startswith("http"):
-        print("❌ URL inválida. O link deve começar com http:// ou https://")
-        exit()
-
-else:
-    print("❌ Opção inválida. Reinicie o robô.")
-    exit()
+logger = get_logger(__name__)
 
 
-# --- FASE 1: INGESTÃO DE DADOS (O ROBÔ TRABALHA) ---
-print("-" * 30)
-print(f"Processando fonte: {FONTE_DADOS}")
+def main():
+    """Main application entry point."""
+    logger.info(f"Starting application - Environment: {settings.ENVIRONMENT}")
+    logger.info(f"Debug mode: {settings.DEBUG}")
 
-texto_bruto = ""
+    # Example: Run CNPJ Pipeline
+    pipeline = CNPJPipeline()
 
-try:
-    # A LÓGICA AGORA É UNIFICADA (IF / ELIF / ELSE)
-
-    # 1. É WEB?
-    if FONTE_DADOS.startswith("http"):
-        print("Modo Detectado: WEB SCRAPING (SELENIUM)")
-        texto_bruto = capturar_texto_da_web(FONTE_DADOS)
-
-    # 2. É TXT?
-    elif FONTE_DADOS.endswith(".txt"):
-        print("Modo Detectado: LEITURA DE TEXTO")
-        with open(FONTE_DADOS, "r", encoding="utf-8") as arquivo:
-            texto_bruto = arquivo.read()
-
-    # 3. É EXCEL?
-    elif FONTE_DADOS.endswith(".xlsx") or FONTE_DADOS.endswith(".xls"):
-        print("Modo Detectado: LEITURA DE EXCEL")
-        df_leitura = pd.read_excel(FONTE_DADOS)
-        texto_bruto = df_leitura.to_string()
-
-    # 4. É CSV?
-    elif FONTE_DADOS.endswith(".csv"):
-        print("Modo Detectado: LEITURA DE CSV")
-        df_leitura = pd.read_csv(FONTE_DADOS)
-        texto_bruto = df_leitura.to_string()
-
+    if pipeline.validate():
+        logger.info("Pipeline validation successful")
+        result = pipeline.execute()
+        logger.info(f"Pipeline result: {result}")
     else:
-        logging.error(f"❌ ERRO: O formato do arquivo '{FONTE_DADOS}' não é suportado.")
-        exit()
+        logger.error("Pipeline validation failed")
 
-except Exception as e:
-    logging.error(f"❌ Erro ao ler a fonte de dados: {e}")
-    exit()
-
-# --- DAQUI PARA BAIXO, TUDO IGUAL ---
-
-# --- PASSO 2: MINERAR OS CNPJS ---
-padrao = r"\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}"
-lista_cnpjs_encontrados = re.findall(padrao, texto_bruto)
-
-# Remove duplicatas
-lista_cnpjs_encontrados = list(set(lista_cnpjs_encontrados))
-
-print(f"Encontrei {len(lista_cnpjs_encontrados)} contratos únicos.")
-
-# --- PASSO 3: ENRIQUECIMENTO DE DADOS ---
-resultados_finais = []
-
-for cnpj_sujo in lista_cnpjs_encontrados:
-    logging.info(f"Processando CNPJ: {cnpj_sujo}")
-
-    validador = ValidadorCNPJ(cnpj_sujo)
-    cnpj_limpo = validador.limpar()
-
-    if cnpj_limpo is None:
-        print("CNPJ Inválido. Pulando...")
-        continue
-
-    dados_empresa = consultar_cnpj(cnpj_limpo)
-
-    if dados_empresa:
-        resultados_finais.append(dados_empresa)
-
-    print("Aguardando 3 segundos...")
-    time.sleep(3)
-
-# --- PASSO 4: PERSISTÊNCIA E RELATÓRIO ---
-print("-" * 30)
-
-if resultados_finais:
-    print("💾 Salvando no banco de dados SQLite...")
-
-    df = pd.DataFrame(resultados_finais)
-
-    # Converte tudo para texto para evitar erro de lista
-    df = df.astype(str)
-
-    # 1. Salva no Banco (Memória de Longo Prazo)
-    conn = sqlite3.connect("dados/banco_contratos.db")
-    df.to_sql("fornecedores", conn, if_exists="append", index=False)
-    conn.close()
-
-    # 2. Gera o Relatório em Excel (Entrega para o Cliente)
-    # Gera um nome único com Ano, Mês, Dia, Hora, Minuto, Segundo
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    nome_arquivo = f"dados/relatorio_contratos_{timestamp}.xlsx"
-
-    print(f"📊 Gerando planilha Excel: {nome_arquivo}...")
-    df.to_excel(nome_arquivo, index=False)
-
-    print("✅ PROCESSO CONCLUÍDO COM SUCESSO! 🚀")
-    print(f"Relatório disponível na pasta 'dados/'.")
-
-else:
-    print("⚠️ Nenhum dado válido encontrado nesta fonte. Nada a salvar.")
+    main()
