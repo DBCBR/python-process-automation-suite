@@ -68,6 +68,24 @@ def run_cnpj_pipeline(
         logger.info(f"Retrieved data for {len(result['results'])} CNPJs")
 
 
+PIPELINE_RUNNERS = {
+    "cnpj": run_cnpj_pipeline,
+}
+
+
+def run_pipeline(
+    name: str, input_data: Optional[str], file_path: Optional[str]
+) -> None:
+    """Run selected pipeline from registry."""
+    runner = PIPELINE_RUNNERS.get(name)
+    if runner:
+        runner(input_data=input_data, file_path=file_path)
+        return
+
+    logger.error(f"Pipeline '{name}' not implemented")
+    sys.exit(1)
+
+
 def list_pipelines() -> None:
     """List all available pipelines."""
     print("\n📦 Available Pipelines:\n")
@@ -129,11 +147,7 @@ Examples:
         parser.print_help()
         sys.exit(1)
 
-    if args.pipeline == "cnpj":
-        run_cnpj_pipeline(input_data=args.input, file_path=args.file)
-    else:
-        logger.error(f"Pipeline '{args.pipeline}' not implemented")
-        sys.exit(1)
+    run_pipeline(name=args.pipeline, input_data=args.input, file_path=args.file)
 
 
 if __name__ == "__main__":
