@@ -1,3 +1,7 @@
+![Python](https://img.shields.io/badge/python-3.10+-blue)
+![Status](https://img.shields.io/badge/status-active-success)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 # Python Process Automation Suite
 
 A modular Python-based automation platform for building scalable workflows, data pipelines, and API integrations.
