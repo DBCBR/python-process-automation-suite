@@ -103,9 +103,44 @@ ENVIRONMENT=development
 
 ### 4. Run the application
 
+#### Using CLI (Recommended)
+
 ```bash
-python main.py
+# List available pipelines
+python main.py --list
+
+# Run CNPJ pipeline with single CNPJ
+python main.py --pipeline cnpj --input "12.345.678/0001-90"
+
+# Run CNPJ pipeline with multiple CNPJs
+python main.py --pipeline cnpj --input "12.345.678/0001-90,11.222.333/0001-81"
+
+# Run CNPJ pipeline from file
+python main.py --pipeline cnpj --file "cnpjs.txt"
 ```
+
+## 📦 Available Pipelines
+
+### CNPJ Pipeline
+
+**Description:** Validates and enriches CNPJ data using BrasilAPI
+
+**Usage:**
+```bash
+python main.py --pipeline cnpj --input "12.345.678/0001-90"
+```
+
+**Input formats:**
+- Single CNPJ: `"12.345.678/0001-90"`
+- Multiple CNPJs: `"12.345.678/0001-90,11.222.333/0001-81"`
+- File with text: `--file "path/to/file.txt"` (extracts CNPJs using regex)
+
+**Features:**
+- ✓ CNPJ validation and cleaning
+- ✓ Automatic company data enrichment
+- ✓ Text-based CNPJ extraction using regex
+- ✓ Error handling and logging
+- ✓ ETL pipeline architecture
 
 ## Usage Examples
 
@@ -116,13 +151,12 @@ from automation.pipelines.cnpj_pipeline import CNPJPipeline
 
 # Create pipeline with list of CNPJs
 cnpj_list = ['00.000.000/0000-91', '11.222.333/0001-81']
-pipeline = CNPJPipeline(cnpj_list)
+pipeline = CNPJPipeline(cnpj_list=cnpj_list)
 
-# Execute pipeline
-result = pipeline.execute()
+# Execute pipeline using ETL pattern
+result = pipeline.run()
 
 print(f"Total processed: {result['total_processed']}")
-print(f"Successful: {result['successful']}")
 print(f"Results: {result['results']}")
 ```
 
